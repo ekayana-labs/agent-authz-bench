@@ -165,6 +165,27 @@ pub trait Format {
     fn measure(&self, hops: usize, runs: usize) -> Timing;
 }
 
+/// Flips one bit at positions across `bytes` and asks `accepted` each time. Stops at the
+/// first flip that gets through, since that's the finding.
+pub fn flip_each_byte(bytes: &[u8], mut accepted: impl FnMut(&[u8]) -> bool) -> Outcome {
+    let step = (bytes.len() / 256).max(1);
+    let mut tried = 0;
+    for at in (0..bytes.len()).step_by(step) {
+        let mut edited = bytes.to_vec();
+        edited[at] ^= 0x01;
+        tried += 1;
+        if accepted(&edited) {
+            return Outcome::allowed(format!(
+                "accepted with a bit flipped at byte {at} of {}",
+                bytes.len()
+            ));
+        }
+    }
+    Outcome::blocked(format!(
+        "rejected all {tried} single-bit edits across the link"
+    ))
+}
+
 pub fn base64_len(bytes: usize) -> usize {
     bytes.div_ceil(3) * 4
 }
@@ -201,6 +222,24 @@ mod tests {
         titles.sort_unstable();
         titles.dedup();
         assert_eq!(titles.len(), ATTACKS.len());
+    }
+
+    #[test]
+    fn a_flip_that_gets_through_is_reported() {
+        let outcome = flip_each_byte(&[1, 2, 3], |edited| edited[1] != 2);
+        assert_eq!(outcome.verdict, Verdict::Allowed);
+        assert!(outcome.detail.contains("byte 1"));
+    }
+
+    #[test]
+    fn flips_cover_every_byte_of_a_small_link() {
+        let mut count = 0;
+        let outcome = flip_each_byte(&[0; 100], |_| {
+            count += 1;
+            false
+        });
+        assert_eq!(count, 100);
+        assert_eq!(outcome.verdict, Verdict::Blocked);
     }
 
     #[test]

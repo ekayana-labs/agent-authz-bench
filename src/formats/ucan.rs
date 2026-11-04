@@ -9,7 +9,9 @@ use pq_ucan::time::Timestamp;
 use pq_ucan::validate::{MemoryReplayGuard, MemoryStore, Validator};
 use pq_ucan::{Cid, Ipld};
 
-use crate::model::{Attack, Format, Outcome, TOOL, Timing, file_in_scope, scope_at, time_runs};
+use crate::model::{
+    Attack, Format, Outcome, TOOL, Timing, file_in_scope, flip_each_byte, scope_at, time_runs,
+};
 
 const HOPS: usize = 3;
 const NOW: i64 = 1_800_000_000;
@@ -127,22 +129,20 @@ fn widened_hop<S: Signer>(generate: fn() -> S) -> Outcome {
 
 fn edited_link<S: Signer>(generate: fn() -> S) -> Outcome {
     let chain = Chain::new(generate, HOPS);
-    let mut bytes = chain.delegations[1].bytes().to_vec();
-    let middle = bytes.len() / 2;
-    bytes[middle] ^= 0x01;
-    let edited = match Delegation::decode(&bytes) {
-        Ok(edited) => edited,
-        Err(error) => return Outcome::blocked(error.to_string()),
-    };
     let invocation = chain.invoke(TOOL, &file_in_scope(HOPS));
-    let mut store = chain.store();
-    store.remove(chain.delegations[1].cid());
-    store.insert(edited);
-    Outcome::from_result(
+    let root = chain.keys[0].did();
+    flip_each_byte(chain.delegations[1].bytes(), |edited| {
+        let Ok(link) = Delegation::decode(edited) else {
+            return false;
+        };
+        let mut store = chain.store();
+        store.remove(chain.delegations[1].cid());
+        store.insert(link);
         Validator::new(&store, now())
-            .executor(&chain.keys[0].did())
-            .validate(&invocation),
-    )
+            .executor(&root)
+            .validate(&invocation)
+            .is_ok()
+    })
 }
 
 fn removed_link<S: Signer>(generate: fn() -> S) -> Outcome {

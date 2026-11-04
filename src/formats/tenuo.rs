@@ -11,7 +11,8 @@ use tenuo::warrant::Warrant;
 use tenuo::wire;
 
 use crate::model::{
-    Attack, Format, Outcome, TOOL, Timing, Verdict, file_in_scope, scope_at, time_runs,
+    Attack, Format, Outcome, TOOL, Timing, Verdict, file_in_scope, flip_each_byte, scope_at,
+    time_runs,
 };
 
 const HOPS: usize = 3;
@@ -145,21 +146,17 @@ fn edited_link() -> Outcome {
     let chain = Chain::new(HOPS, None);
     let path = file_in_scope(HOPS);
     let proof = chain.proof(chain.holder(), TOOL, &path);
-    let mut bytes = wire::encode(&chain.warrants[1]).unwrap();
-    let middle = bytes.len() / 2;
-    bytes[middle] ^= 0x01;
-    let edited = match wire::decode(&bytes) {
-        Ok(warrant) => warrant,
-        Err(error) => return Outcome::blocked(error.to_string()),
-    };
-    let warrants = vec![chain.warrants[0].clone(), edited, chain.warrants[2].clone()];
-    Outcome::from_result(chain.authorizer().check_chain(
-        &warrants,
-        TOOL,
-        &args(&path),
-        Some(&proof),
-        &[],
-    ))
+    let authorizer = chain.authorizer();
+    let bytes = wire::encode(&chain.warrants[1]).unwrap();
+    flip_each_byte(&bytes, |edited| {
+        let Ok(link) = wire::decode(edited) else {
+            return false;
+        };
+        let warrants = [chain.warrants[0].clone(), link, chain.warrants[2].clone()];
+        authorizer
+            .check_chain(&warrants, TOOL, &args(&path), Some(&proof), &[])
+            .is_ok()
+    })
 }
 
 fn removed_link() -> Outcome {

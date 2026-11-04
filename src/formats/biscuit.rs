@@ -4,7 +4,9 @@ use biscuit_auth::builder::{Algorithm, BlockBuilder};
 use biscuit_auth::macros::{authorizer, biscuit};
 use biscuit_auth::{Biscuit, KeyPair, PublicKey};
 
-use crate::model::{Attack, Format, Outcome, TOOL, Timing, file_in_scope, scope_at, time_runs};
+use crate::model::{
+    Attack, Format, Outcome, TOOL, Timing, file_in_scope, flip_each_byte, scope_at, time_runs,
+};
 
 const HOPS: usize = 3;
 const TTL: Duration = Duration::from_secs(600);
@@ -152,16 +154,10 @@ fn widened_hop() -> Outcome {
 
 fn edited_link() -> Outcome {
     let token = Token::fresh(HOPS);
-    let mut bytes = token.bytes();
-    let middle = bytes.len() / 2;
-    bytes[middle] ^= 0x01;
-    outcome(check_bytes(
-        &bytes,
-        token.public(),
-        TOOL,
-        &file_in_scope(HOPS),
-        now(),
-    ))
+    let path = file_in_scope(HOPS);
+    flip_each_byte(&token.bytes(), |edited| {
+        check_bytes(edited, token.public(), TOOL, &path, now()).is_ok()
+    })
 }
 
 fn removed_link() -> Outcome {
