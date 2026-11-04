@@ -56,6 +56,20 @@ fn cell(outcome: &Outcome) -> &'static str {
     }
 }
 
+/// Links, how many PERMIT vectors have that many links, and their median chain plus proof size.
+const IETF_SIZES: [(usize, usize, usize); 4] =
+    [(1, 17, 1201), (2, 30, 2369), (3, 6, 3109), (9, 1, 7675)];
+
+fn ietf_section() -> String {
+    let mut out = String::from(
+        "\n## IETF draft format, size only\n\ndraft-niyikiza-oauth-attenuating-agent-tokens-02 isn't in the tables above. A verifier we wrote would test our reading of the draft rather than the format, and independent verifiers aren't wired in yet. These are chain plus proof sizes in compact JWT form, from the draft's PERMIT vectors in Tenuo's repository (`tests/vectors/aat-jws-vectors.json` at commit 597d88c4). The vectors use varied limits, so they don't line up row by row with the table above.\n\n| Links | Vectors | Median size |\n|---:|---:|---:|\n",
+    );
+    for (links, vectors, median) in IETF_SIZES {
+        out.push_str(&format!("| {links} | {vectors} | {median} bytes |\n"));
+    }
+    out
+}
+
 const LONGEST_WORD: usize = 60;
 
 /// Post-quantum DIDs run to thousands of characters and say nothing useful in a table.
@@ -114,6 +128,8 @@ pub fn to_markdown(results: &Results) -> String {
             ));
         }
     }
+
+    out.push_str(&ietf_section());
 
     out.push_str("\n## Why each result happened\n");
     for format in &results.formats {
