@@ -314,17 +314,19 @@ impl Format for Tenuo {
         let path = file_in_scope(hops);
         let request = args(&path);
         let proof = chain.proof(chain.holder(), TOOL, &path);
+        let proof_bytes = proof.to_bytes();
         let bytes = wire::encode_stack(&wire::WarrantStack::new(chain.warrants.clone())).unwrap();
         let authorizer = chain.authorizer();
         let (median_us, p99_us) = time_runs(runs, || {
             let stack = wire::decode_stack(&bytes).unwrap();
+            let proof = Signature::from_bytes(&proof_bytes).unwrap();
             authorizer
                 .check_chain(&stack.0, TOOL, &request, Some(&proof), &[])
                 .unwrap();
         });
         Timing {
             hops,
-            bytes: bytes.len() + proof.to_bytes().len(),
+            bytes: bytes.len() + proof_bytes.len(),
             median_us,
             p99_us,
         }
