@@ -52,7 +52,6 @@ fn main() -> std::io::Result<()> {
             machine: machine(),
             os: format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
             rustc: output_of("rustc", &["--version"]),
-            runs_per_case: RUNS,
         },
         formats,
     };

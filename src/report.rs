@@ -11,6 +11,7 @@ pub struct FormatResult {
     pub name: String,
     pub version: String,
     pub notes: String,
+    pub runs: usize,
     pub outcomes: Vec<(Attack, Outcome)>,
     pub timings: Vec<Timing>,
 }
@@ -21,7 +22,6 @@ pub struct Environment {
     pub machine: String,
     pub os: String,
     pub rustc: String,
-    pub runs_per_case: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,6 +35,7 @@ pub fn run_format(format: &dyn Format, runs: usize) -> FormatResult {
         name: format.name().to_owned(),
         version: format.version().to_owned(),
         notes: format.notes().to_owned(),
+        runs,
         outcomes: ATTACKS
             .iter()
             .map(|attack| (*attack, format.run(*attack)))
@@ -55,8 +56,20 @@ fn cell(outcome: &Outcome) -> &'static str {
     }
 }
 
+const LONGEST_WORD: usize = 60;
+
+/// Post-quantum DIDs run to thousands of characters and say nothing useful in a table.
+fn shorten(word: &str) -> String {
+    if word.chars().count() <= LONGEST_WORD {
+        return word.to_owned();
+    }
+    let start: String = word.chars().take(24).collect();
+    format!("{start}…")
+}
+
 fn escape(text: &str) -> String {
-    text.replace('|', "\\|").replace('\n', " ")
+    let short: Vec<String> = text.split(' ').map(shorten).collect();
+    short.join(" ").replace('|', "\\|").replace('\n', " ")
 }
 
 pub fn to_markdown(results: &Results) -> String {
@@ -82,22 +95,22 @@ pub fn to_markdown(results: &Results) -> String {
         out.push('\n');
     }
 
-    out.push_str(&format!(
-        "\n## Size and check time\n\nThe same one-tool scenario in each format, with minimal limits. Times cover decoding, every signature and the policy check, over {} runs, and exclude the network. Size is everything the verifier needs, as base64.\n\n",
-        env.runs_per_case
-    ));
     out.push_str(
-        "| Format | Hops | Size | Median | 99th percentile |\n|---|---:|---:|---:|---:|\n",
+        "\n## Size and check time\n\nThe same one-tool scenario in each format, with minimal limits. Times cover decoding, every signature and the policy check, and exclude the network. Size is everything the verifier needs, as base64. Biscuit has no per-request proof, so it checks one signature fewer and sends less.\n\n",
+    );
+    out.push_str(
+        "| Format | Hops | Size | Median | 99th percentile | Runs |\n|---|---:|---:|---:|---:|---:|\n",
     );
     for format in &results.formats {
         for timing in &format.timings {
             out.push_str(&format!(
-                "| {} | {} | {} bytes | {:.0} µs | {:.0} µs |\n",
+                "| {} | {} | {} bytes | {:.0} µs | {:.0} µs | {} |\n",
                 format.name,
                 timing.hops,
                 base64_len(timing.bytes),
                 timing.median_us,
-                timing.p99_us
+                timing.p99_us,
+                format.runs
             ));
         }
     }
@@ -131,12 +144,12 @@ mod tests {
                 machine: "test".into(),
                 os: "test".into(),
                 rustc: "test".into(),
-                runs_per_case: 1,
             },
             formats: vec![FormatResult {
                 name: "F".into(),
                 version: "1".into(),
                 notes: "note".into(),
+                runs: 1,
                 outcomes: ATTACKS
                     .iter()
                     .map(|attack| (*attack, Outcome::blocked("a | b")))
@@ -164,6 +177,15 @@ mod tests {
     #[test]
     fn table_separators_are_escaped() {
         assert!(to_markdown(&sample()).contains("a \\| b"));
+    }
+
+    #[test]
+    fn very_long_words_are_cut_and_others_kept() {
+        let did = format!("did:key:{}", "z".repeat(5000));
+        let short = escape(&format!("audience {did} is wrong"));
+        assert!(short.starts_with("audience did:key:"));
+        assert!(short.ends_with("… is wrong"));
+        assert!(short.len() < 60);
     }
 
     #[test]
