@@ -298,7 +298,7 @@ impl Format for BiscuitFormat {
                     &file_in_scope(12),
                     now(),
                 ));
-                result.detail = "accepted: the format has no depth limit".to_owned();
+                result.detail = "accepted: the token can't carry a depth limit; a verifier can use block_count itself".to_owned();
                 result
             }
         }

@@ -308,7 +308,7 @@ impl<S: Signer> Format for Ucan<S> {
             Attack::DepthLimitExceeded => {
                 let long = Chain::new(self.generate, 12);
                 let mut result = long.check(&long.invoke(TOOL, &file_in_scope(12)));
-                result.detail = "accepted: UCAN has no depth limit".to_owned();
+                result.detail = "accepted: UCAN has no depth limit in the token; a verifier can count proofs itself".to_owned();
                 result
             }
         }
