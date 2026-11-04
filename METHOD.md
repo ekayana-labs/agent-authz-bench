@@ -60,4 +60,6 @@ The draft format gets sizes only, taken from its published vectors. We left it o
 
 Ekayana maintains `pq-ucan`, one of the libraries tested, and we build in the same space as the others. Treat our choices with the suspicion that deserves, and check them: the tests are short and every adapter is in `src/formats/`.
 
+The first results showed `pq-ucan` 0.1.2 with no revocation store and no depth limit, so we added both in 0.1.3, and its results for those two attacks changed. Neither is the same feature as Tenuo's. Tenuo's depth limit is in the token and set per delegation, so a delegator can say how much further a grant may go. `pq-ucan`'s is the verifier's own, one limit for every chain, because a UCAN has nowhere to carry one. The path result didn't change: the same text comparison stays Allowed for both UCAN and Biscuit. The `pq-ucan` docs show how to refuse such paths, and Biscuit could write the same check, so doing it for UCAN alone wouldn't be a fair comparison.
+
 If we've misused your library or described it wrongly, please open an issue. We'd rather fix the result than defend it.
