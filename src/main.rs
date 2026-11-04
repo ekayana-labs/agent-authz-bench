@@ -56,6 +56,7 @@ fn main() -> std::io::Result<()> {
         formats,
     };
 
+    std::fs::create_dir_all(&out_dir)?;
     std::fs::write(
         format!("{out_dir}/results.json"),
         serde_json::to_string_pretty(&results)?,
