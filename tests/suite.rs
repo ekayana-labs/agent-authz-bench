@@ -1,5 +1,6 @@
 use agent_authz_bench::formats::biscuit::BiscuitFormat;
 use agent_authz_bench::formats::tenuo::Tenuo;
+use agent_authz_bench::formats::ucan::Ucan;
 use agent_authz_bench::model::{ATTACKS, Attack, EnforcedBy, Format, Verdict};
 
 fn expect(format: &dyn Format, expected: &[(Attack, Verdict, EnforcedBy)]) {
@@ -73,4 +74,47 @@ fn biscuit_results_have_not_changed() {
             (DepthLimitExceeded, Verdict::Allowed, Nothing),
         ],
     );
+}
+
+fn ucan_expectations() -> Vec<(Attack, Verdict, EnforcedBy)> {
+    use Attack::*;
+    use EnforcedBy::*;
+    vec![
+        (HonestRequest, Verdict::Allowed, Nothing),
+        (ArgumentOutOfScope, Verdict::Blocked, Library),
+        (PathTraversal, Verdict::Allowed, Nothing),
+        (ToolNotGranted, Verdict::Blocked, Library),
+        (WidenedHop, Verdict::Blocked, Library),
+        (EditedLink, Verdict::Blocked, Library),
+        (RemovedLink, Verdict::Blocked, Library),
+        (UnknownRoot, Verdict::Blocked, Library),
+        (Expired, Verdict::Blocked, Library),
+        (OutlivesParent, Verdict::Blocked, Library),
+        (StolenChain, Verdict::Blocked, Library),
+        (ProofForOtherArguments, Verdict::Blocked, Library),
+        (ReplayedRequest, Verdict::Blocked, Library),
+        (RevokedAncestor, Verdict::Blocked, YourCode),
+        (DepthLimitExceeded, Verdict::Allowed, Nothing),
+    ]
+}
+
+#[test]
+fn ucan_ed25519_results_have_not_changed() {
+    let format = Ucan {
+        label: "UCAN Ed25519",
+        generate: || pq_ucan::crypto::ed25519::Ed25519Keypair::generate(&mut pq_ucan::rng::system()),
+    };
+    expect(&format, &ucan_expectations());
+}
+
+#[test]
+fn ucan_ml_dsa_results_have_not_changed() {
+    let format = Ucan {
+        label: "UCAN ML-DSA-65",
+        generate: || {
+            pq_ucan::crypto::ml_dsa::MlDsaKeypair::generate(pq_ucan::crypto::Algorithm::MlDsa65)
+                .unwrap()
+        },
+    };
+    expect(&format, &ucan_expectations());
 }
