@@ -1,3 +1,4 @@
+use agent_authz_bench::formats::biscuit::BiscuitFormat;
 use agent_authz_bench::formats::tenuo::Tenuo;
 use agent_authz_bench::model::{ATTACKS, Attack, EnforcedBy, Format, Verdict};
 
@@ -46,4 +47,30 @@ fn tenuo_results_have_not_changed() {
 fn tenuo_timing_covers_the_chain() {
     let timing = Tenuo.measure(3, 5);
     assert!(timing.bytes > Tenuo.measure(1, 5).bytes);
+}
+
+#[test]
+fn biscuit_results_have_not_changed() {
+    use Attack::*;
+    use EnforcedBy::*;
+    expect(
+        &BiscuitFormat,
+        &[
+            (HonestRequest, Verdict::Allowed, Nothing),
+            (ArgumentOutOfScope, Verdict::Blocked, Library),
+            (PathTraversal, Verdict::Allowed, Nothing),
+            (ToolNotGranted, Verdict::Blocked, Library),
+            (WidenedHop, Verdict::Blocked, Library),
+            (EditedLink, Verdict::Blocked, Library),
+            (RemovedLink, Verdict::Blocked, Library),
+            (UnknownRoot, Verdict::Blocked, Library),
+            (Expired, Verdict::Blocked, Library),
+            (OutlivesParent, Verdict::Blocked, Library),
+            (StolenChain, Verdict::Allowed, Nothing),
+            (ProofForOtherArguments, Verdict::NotApplicable, Nothing),
+            (ReplayedRequest, Verdict::Allowed, Nothing),
+            (RevokedAncestor, Verdict::Blocked, YourCode),
+            (DepthLimitExceeded, Verdict::Allowed, Nothing),
+        ],
+    );
 }
