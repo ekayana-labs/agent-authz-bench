@@ -24,6 +24,7 @@ pub fn file_in_scope(hops: usize) -> String {
 pub enum Attack {
     HonestRequest,
     ArgumentOutOfScope,
+    PathTraversal,
     ToolNotGranted,
     WidenedHop,
     EditedLink,
@@ -38,9 +39,10 @@ pub enum Attack {
     DepthLimitExceeded,
 }
 
-pub const ATTACKS: [Attack; 14] = [
+pub const ATTACKS: [Attack; 15] = [
     Attack::HonestRequest,
     Attack::ArgumentOutOfScope,
+    Attack::PathTraversal,
     Attack::ToolNotGranted,
     Attack::WidenedHop,
     Attack::EditedLink,
@@ -60,6 +62,7 @@ impl Attack {
         match self {
             Attack::HonestRequest => "Honest request (must be allowed)",
             Attack::ArgumentOutOfScope => "Argument outside the granted scope",
+            Attack::PathTraversal => "Path that climbs out of scope with ../",
             Attack::ToolNotGranted => "Tool that was never granted",
             Attack::WidenedHop => "A hop grants more than it received",
             Attack::EditedLink => "A signed link is edited",
