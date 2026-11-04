@@ -48,6 +48,8 @@ These numbers come from one machine with minimal limits. Real limits add work, a
 - **How the other languages behave.** Only the Rust libraries are tested.
 - **Everything each format can do.** Biscuit's third-party blocks and Tenuo's other constraint types aren't tested, for example. A format may have a way to handle something that we didn't use.
 
+Optional checks count as the library's when the library ships them and you only have to switch them on. UCAN's replay, revocation and depth results are like that: a validator with none of them switched on allows all three. The reason column says which option each one needs.
+
 Paths are a good example of that last point. Tenuo has a constraint built for paths and blocks `../`. Biscuit and UCAN compare text here, so they accept it unless you normalise paths first. That's a difference in what comes built in, and a real one, but a normalising check in your own code closes it.
 
 ## The IETF draft

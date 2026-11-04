@@ -1,6 +1,6 @@
 {
   "environment": {
-    "date": "2026-11-04",
+    "date": "2026-11-05",
     "machine": "Apple M4 Pro",
     "os": "macos aarch64",
     "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)"
@@ -81,7 +81,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "FailedLogic(Unauthorized { policy: Allow(0), checks: [Block(FailedBlockCheck { block_id: 0, check_id: 1, rule: \"check if time($t), $t < 2026-11-04T16:11:11Z\" })] })"
+            "detail": "FailedLogic(Unauthorized { policy: Allow(0), checks: [Block(FailedBlockCheck { block_id: 0, check_id: 1, rule: \"check if time($t), $t < 2026-11-04T22:24:57Z\" })] })"
           }
         ],
         [
@@ -89,7 +89,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "FailedLogic(Unauthorized { policy: Allow(0), checks: [Block(FailedBlockCheck { block_id: 0, check_id: 1, rule: \"check if time($t), $t < 2026-11-04T16:11:11Z\" })] })"
+            "detail": "FailedLogic(Unauthorized { policy: Allow(0), checks: [Block(FailedBlockCheck { block_id: 0, check_id: 1, rule: \"check if time($t), $t < 2026-11-04T22:24:57Z\" })] })"
           }
         ],
         [
@@ -137,26 +137,26 @@
         {
           "hops": 1,
           "bytes": 264,
-          "median_us": 41.958,
-          "p99_us": 59.583
+          "median_us": 41.75,
+          "p99_us": 59.375
         },
         {
           "hops": 3,
           "bytes": 589,
-          "median_us": 94.458,
-          "p99_us": 103.458
+          "median_us": 88.084,
+          "p99_us": 107.375
         },
         {
           "hops": 5,
           "bytes": 926,
-          "median_us": 146.666,
-          "p99_us": 160.625
+          "median_us": 141.209,
+          "p99_us": 158.875
         },
         {
           "hops": 8,
           "bytes": 1454,
-          "median_us": 227.125,
-          "p99_us": 244.75
+          "median_us": 222.083,
+          "p99_us": 244.5
         }
       ]
     },
@@ -219,7 +219,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "chain verification failed: I1 violated: child.issuer (17a89bd32e5f6878) != parent.holder (a04cb794b5e67872)"
+            "detail": "chain verification failed: I1 violated: child.issuer (aab0b2b5a903a59f) != parent.holder (87254ef08096fd38)"
           }
         ],
         [
@@ -235,7 +235,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "warrant 'tnu_wrt_01a1a74b02c5773f9c94027484af8764' expired at 2026-11-04 16:11:13 UTC"
+            "detail": "warrant 'tnu_wrt_01a1a8a1347a722a93fe8479a581b59f' expired at 2026-11-04 22:24:59 UTC"
           }
         ],
         [
@@ -243,7 +243,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "warrant 'tnu_wrt_01a1a74b02c5773f9c94027a12e964c9' expired at 2026-11-04 16:11:13 UTC"
+            "detail": "warrant 'tnu_wrt_01a1a8a1347a722a93fe847f853814fb' expired at 2026-11-04 22:24:59 UTC"
           }
         ],
         [
@@ -275,7 +275,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "warrant revoked: tnu_wrt_01a1a74b02c676358bcde34dbb879ed4"
+            "detail": "warrant revoked: tnu_wrt_01a1a8a1347b7181ba5e2672660dff5a"
           }
         ],
         [
@@ -291,33 +291,33 @@
         {
           "hops": 1,
           "bytes": 325,
-          "median_us": 75.791,
-          "p99_us": 82.083
+          "median_us": 75.75,
+          "p99_us": 85.083
         },
         {
           "hops": 3,
-          "bytes": 986,
-          "median_us": 151.833,
-          "p99_us": 162.625
+          "bytes": 984,
+          "median_us": 151.791,
+          "p99_us": 184.958
         },
         {
           "hops": 5,
-          "bytes": 1654,
-          "median_us": 221.042,
-          "p99_us": 238.667
+          "bytes": 1656,
+          "median_us": 216.709,
+          "p99_us": 245.75
         },
         {
           "hops": 8,
-          "bytes": 2686,
-          "median_us": 328.416,
-          "p99_us": 353.583
+          "bytes": 2688,
+          "median_us": 327.875,
+          "p99_us": 366.667
         }
       ]
     },
     {
       "name": "UCAN Ed25519",
-      "version": "pq-ucan 0.1.2",
-      "notes": "Paths use the UCAN policy language's glob match, which treats a path as plain text. pq-ucan is maintained by the authors of this benchmark.",
+      "version": "pq-ucan 0.1.3",
+      "notes": "Paths use the UCAN policy language's glob match, which treats a path as plain text. Replay, revocation and depth limits are optional checks you switch on. The depth limit is the verifier's, one for every chain, rather than set per delegation in the token. pq-ucan is maintained by the authors of this benchmark.",
       "runs": 3000,
       "outcomes": [
         [
@@ -341,7 +341,7 @@
           {
             "verdict": "allowed",
             "enforced_by": "nothing",
-            "detail": "accepted: the glob compares text, so normalise paths before checking"
+            "detail": "accepted: the glob compares text, so refuse paths that aren't in normal form before checking"
           }
         ],
         [
@@ -373,7 +373,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "proof 0: audience did:key:z6MkrV6NM1SFT41dmh8oXD9qDugnzKQAwpTcsygY7QUv1ogW is not the next issuer did:key:z6MknDPf1HeMhouTxmQADPQQJyZVeDGp7MTcgwfLLoUw1XDa"
+            "detail": "proof 0: audience did:key:z6MksJPS9wcmRg2mEzhkJuuw3XpCB5uDmoTZr3RnTbQDyCmV is not the next issuer did:key:z6MkmDEvxzEfd76A4WkdvQbfLLr8uHLtaJ3tXQJ6QaVzNcLt"
           }
         ],
         [
@@ -381,7 +381,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "root delegation issued by did:key:z6MkqfYPFzktFPJzg9oXwU2X56bfQDLK6B3JdrSzHdn2oe62, subject is did:key:z6MkkSSRxvKip8wsZ3bggAXTJPUYvzjMrM8uEP3eNGsHYrtU"
+            "detail": "root delegation issued by did:key:z6MkvubH3xCkXR7vsbQvJu57k8FmpugbyiDVxn2SATSpPP6a, subject is did:key:z6MkmbNMJFp2iWQTpiowYRbjdqff33Vy4Uoy7ZZUh3ahq5Lo"
           }
         ],
         [
@@ -405,7 +405,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "proof 2: audience did:key:z6MkgFB3TJtiaXab8VpefzMEM4a9hHwAPUeFJFBWrwWUfzLD is not the next issuer did:key:z6MkhzzfiTVJqrLZD5Pzh9zwaY9ujGEoSMPW8drcyADiBFXn"
+            "detail": "proof 2: audience did:key:z6Mkhv96pszLLswViWGYzzJ5L6dBbsHYoibX2FLbHFkyY1hg is not the next issuer did:key:z6MknDrBmw8dnoSDWZ1DJMYkvZcp2V3p8DLuzf4rp4g6puTZ"
           }
         ],
         [
@@ -421,23 +421,23 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "invocation bafyreibdjdtyw3bqhe2o56dced7zsawp6iokyz436sfkygefmfidc55gay was already executed; needs the optional replay guard"
+            "detail": "invocation bafyreihzpfj6zhioqrvcusobvosxvrth3jnazy2rtqxlyrdlxvnrfnshuu was already executed; needs the optional replay guard"
           }
         ],
         [
           "revoked_ancestor",
           {
             "verdict": "blocked",
-            "enforced_by": "your_code",
-            "detail": "the validator has no revocation store in this version; you check proof CIDs against your list first"
+            "enforced_by": "library",
+            "detail": "proof 0: delegation bafyreiaovlebnk5ud2v7orulrxghogaouxbr346s5ywrxuek5fvsqtmkji has been revoked; needs the optional revocation store"
           }
         ],
         [
           "depth_limit_exceeded",
           {
-            "verdict": "allowed",
-            "enforced_by": "nothing",
-            "detail": "accepted: UCAN has no depth limit in the token; a verifier can count proofs itself"
+            "verdict": "blocked",
+            "enforced_by": "library",
+            "detail": "invocation carries 12 proofs, the limit is 11; the verifier sets the limit, not the token"
           }
         ]
       ],
@@ -445,33 +445,33 @@
         {
           "hops": 1,
           "bytes": 691,
-          "median_us": 53.25,
-          "p99_us": 58.958
+          "median_us": 48.125,
+          "p99_us": 61.917
         },
         {
           "hops": 3,
           "bytes": 1494,
-          "median_us": 106.333,
-          "p99_us": 117.625
+          "median_us": 104.042,
+          "p99_us": 113.708
         },
         {
           "hops": 5,
           "bytes": 2310,
-          "median_us": 159.583,
-          "p99_us": 171.0
+          "median_us": 155.584,
+          "p99_us": 196.958
         },
         {
           "hops": 8,
           "bytes": 3557,
-          "median_us": 237.417,
-          "p99_us": 255.792
+          "median_us": 233.875,
+          "p99_us": 263.083
         }
       ]
     },
     {
       "name": "UCAN ML-DSA-65",
-      "version": "pq-ucan 0.1.2",
-      "notes": "Paths use the UCAN policy language's glob match, which treats a path as plain text. pq-ucan is maintained by the authors of this benchmark.",
+      "version": "pq-ucan 0.1.3",
+      "notes": "Paths use the UCAN policy language's glob match, which treats a path as plain text. Replay, revocation and depth limits are optional checks you switch on. The depth limit is the verifier's, one for every chain, rather than set per delegation in the token. pq-ucan is maintained by the authors of this benchmark.",
       "runs": 300,
       "outcomes": [
         [
@@ -495,7 +495,7 @@
           {
             "verdict": "allowed",
             "enforced_by": "nothing",
-            "detail": "accepted: the glob compares text, so normalise paths before checking"
+            "detail": "accepted: the glob compares text, so refuse paths that aren't in normal form before checking"
           }
         ],
         [
@@ -527,7 +527,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "proof 0: audience did:key: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 is not the next issuer did:key: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"
+            "detail": "proof 0: audience did:key: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 is not the next issuer did:key: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"
           }
         ],
         [
@@ -535,7 +535,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "root delegation issued by did:key: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, subject is did:key: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"
+            "detail": "root delegation issued by did:key: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, subject is did:key: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"
           }
         ],
         [
@@ -559,7 +559,7 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "proof 2: audience did:key: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 is not the next issuer did:key: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"
+            "detail": "proof 2: audience did:key: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 is not the next issuer did:key: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"
           }
         ],
         [
@@ -575,23 +575,23 @@
           {
             "verdict": "blocked",
             "enforced_by": "library",
-            "detail": "invocation bafyreiaba23emdaf54xcrvnho2qlebxp2claxbosjswhe3kad63u33plni was already executed; needs the optional replay guard"
+            "detail": "invocation bafyreibep2ve3p2w626zmvdavutl3qiszu7f3rxzpothfnxeytpji25pa4 was already executed; needs the optional replay guard"
           }
         ],
         [
           "revoked_ancestor",
           {
             "verdict": "blocked",
-            "enforced_by": "your_code",
-            "detail": "the validator has no revocation store in this version; you check proof CIDs against your list first"
+            "enforced_by": "library",
+            "detail": "proof 0: delegation bafyreibumv7u5i7iu6y3aa6btcw43t75iirduxbxmxilqdj63u26m64ray has been revoked; needs the optional revocation store"
           }
         ],
         [
           "depth_limit_exceeded",
           {
-            "verdict": "allowed",
-            "enforced_by": "nothing",
-            "detail": "accepted: UCAN has no depth limit in the token; a verifier can count proofs itself"
+            "verdict": "blocked",
+            "enforced_by": "library",
+            "detail": "invocation carries 12 proofs, the limit is 11; the verifier sets the limit, not the token"
           }
         ]
       ],
@@ -599,26 +599,26 @@
         {
           "hops": 1,
           "bytes": 20292,
-          "median_us": 2501.292,
-          "p99_us": 2562.667
+          "median_us": 2485.292,
+          "p99_us": 2742.0
         },
         {
           "hops": 3,
           "bytes": 43319,
-          "median_us": 5027.75,
-          "p99_us": 5219.125
+          "median_us": 5001.708,
+          "p99_us": 5909.708
         },
         {
           "hops": 5,
           "bytes": 66359,
-          "median_us": 7542.125,
-          "p99_us": 7860.292
+          "median_us": 7493.667,
+          "p99_us": 8335.0
         },
         {
           "hops": 8,
           "bytes": 100942,
-          "median_us": 11268.833,
-          "p99_us": 11600.792
+          "median_us": 11197.75,
+          "p99_us": 12554.5
         }
       ]
     }

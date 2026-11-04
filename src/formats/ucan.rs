@@ -1,3 +1,4 @@
+use pq_ucan::Ipld;
 use pq_ucan::command::Command;
 use pq_ucan::crypto::Signer;
 use pq_ucan::delegation::{Delegation, Subject};
@@ -6,8 +7,9 @@ use pq_ucan::invocation::Invocation;
 use pq_ucan::nonce::Nonce;
 use pq_ucan::policy::{Pattern, Policy, Selector, Statement};
 use pq_ucan::time::Timestamp;
-use pq_ucan::validate::{MemoryReplayGuard, MemoryStore, Validator};
-use pq_ucan::{Cid, Ipld};
+use pq_ucan::validate::{
+    MemoryReplayGuard, MemoryRevocationStore, MemoryStore, REVOKE_COMMAND, Validator,
+};
 
 use crate::model::{
     Attack, Format, Outcome, TOOL, Timing, file_in_scope, flip_each_byte, scope_at, time_runs,
@@ -248,17 +250,78 @@ fn replayed<S: Signer>(generate: fn() -> S) -> Outcome {
     result
 }
 
+fn revocation_of<S: Signer>(target: &Delegation, subject: &Did, signer: &S) -> Invocation {
+    Invocation::builder(subject.clone(), Command::parse(REVOKE_COMMAND).unwrap())
+        .arg("revoke", Ipld::Link(*target.cid()))
+        .nonce(Nonce::empty())
+        .expires_at(now().plus_seconds(60))
+        .sign(signer)
+        .unwrap()
+}
+
+/// The root signs a revocation of its grant, the library judges it, and the
+/// store is filled from what the library accepted.
 fn revoked_ancestor<S: Signer>(generate: fn() -> S) -> Outcome {
     let chain = Chain::new(generate, HOPS);
-    let revoked: Cid = *chain.delegations[0].cid();
     let invocation = chain.invoke(TOOL, &file_in_scope(HOPS));
-    if invocation.proofs().contains(&revoked) {
-        Outcome::blocked_by_your_code(
-            "the validator has no revocation store in this version; you check proof CIDs against your list first",
+    let store = chain.store();
+    let root = chain.keys[0].did();
+    let mut revocations = MemoryRevocationStore::new();
+    Validator::new(&store, now())
+        .executor(&root)
+        .revocations(&revocations)
+        .validate(&invocation)
+        .expect("the chain is honest until it is revoked");
+
+    let granted = &chain.delegations[..1];
+    let validator = Validator::new(&store, now());
+    validator
+        .check_revocation(
+            &root,
+            &revocation_of(&granted[0], &root, chain.keys.last().unwrap()),
+            granted,
         )
-    } else {
-        Outcome::allowed("accepted")
-    }
+        .expect_err("someone downstream may not revoke");
+    let accepted = validator
+        .check_revocation(
+            &root,
+            &revocation_of(&granted[0], &root, &chain.keys[0]),
+            granted,
+        )
+        .expect("the root may revoke its own grant");
+    revocations.record(&accepted);
+
+    let mut result = Outcome::from_result(
+        Validator::new(&store, now())
+            .executor(&root)
+            .revocations(&revocations)
+            .validate(&invocation),
+    );
+    result.detail = format!("{}; needs the optional revocation store", result.detail);
+    result
+}
+
+fn past_proof_limit<S: Signer>(generate: fn() -> S) -> Outcome {
+    let long = Chain::new(generate, 12);
+    let invocation = long.invoke(TOOL, &file_in_scope(12));
+    let store = long.store();
+    let root = long.keys[0].did();
+    Validator::new(&store, now())
+        .executor(&root)
+        .max_proofs(12)
+        .validate(&invocation)
+        .expect("a chain at the limit passes");
+    let mut result = Outcome::from_result(
+        Validator::new(&store, now())
+            .executor(&root)
+            .max_proofs(11)
+            .validate(&invocation),
+    );
+    result.detail = format!(
+        "{}; the verifier sets the limit, not the token",
+        result.detail
+    );
+    result
 }
 
 impl<S: Signer> Format for Ucan<S> {
@@ -267,11 +330,11 @@ impl<S: Signer> Format for Ucan<S> {
     }
 
     fn version(&self) -> &'static str {
-        "pq-ucan 0.1.2"
+        "pq-ucan 0.1.3"
     }
 
     fn notes(&self) -> &'static str {
-        "Paths use the UCAN policy language's glob match, which treats a path as plain text. pq-ucan is maintained by the authors of this benchmark."
+        "Paths use the UCAN policy language's glob match, which treats a path as plain text. Replay, revocation and depth limits are optional checks you switch on. The depth limit is the verifier's, one for every chain, rather than set per delegation in the token. pq-ucan is maintained by the authors of this benchmark."
     }
 
     fn run(&self, attack: Attack) -> Outcome {
@@ -284,7 +347,7 @@ impl<S: Signer> Format for Ucan<S> {
                 let sneaky = format!("{}/../../../etc/passwd", scope_at(HOPS));
                 let mut result = chain.check(&chain.invoke(TOOL, &sneaky));
                 result.detail =
-                    "accepted: the glob compares text, so normalise paths before checking"
+                    "accepted: the glob compares text, so refuse paths that aren't in normal form before checking"
                         .to_owned();
                 result
             }
@@ -305,12 +368,7 @@ impl<S: Signer> Format for Ucan<S> {
             Attack::ProofForOtherArguments => edited_arguments(self.generate),
             Attack::ReplayedRequest => replayed(self.generate),
             Attack::RevokedAncestor => revoked_ancestor(self.generate),
-            Attack::DepthLimitExceeded => {
-                let long = Chain::new(self.generate, 12);
-                let mut result = long.check(&long.invoke(TOOL, &file_in_scope(12)));
-                result.detail = "accepted: UCAN has no depth limit in the token; a verifier can count proofs itself".to_owned();
-                result
-            }
+            Attack::DepthLimitExceeded => past_proof_limit(self.generate),
         }
     }
 

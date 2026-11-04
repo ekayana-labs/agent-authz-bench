@@ -1507,9 +1507,9 @@ dependencies = [
 
 [[package]]
 name = "pq-ucan"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4f26f4e23e6a928ec6dafd6be3839af162b48e6fdf1fc15af6718f514da014e"
+checksum = "ffe19364f0fef69f21b8fe5ad6a76247a3e57fe4db8884aaca260af4148b117d"
 dependencies = [
  "aws-lc-rs",
  "bs58",

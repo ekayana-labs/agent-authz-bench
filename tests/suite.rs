@@ -93,8 +93,8 @@ fn ucan_expectations() -> Vec<(Attack, Verdict, EnforcedBy)> {
         (StolenChain, Verdict::Blocked, Library),
         (ProofForOtherArguments, Verdict::Blocked, Library),
         (ReplayedRequest, Verdict::Blocked, Library),
-        (RevokedAncestor, Verdict::Blocked, YourCode),
-        (DepthLimitExceeded, Verdict::Allowed, Nothing),
+        (RevokedAncestor, Verdict::Blocked, Library),
+        (DepthLimitExceeded, Verdict::Blocked, Library),
     ]
 }
 
