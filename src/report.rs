@@ -1,0 +1,179 @@
+//! Writes results as JSON and Markdown. There are no scores or rankings on purpose.
+
+use serde::{Deserialize, Serialize};
+
+use crate::model::{ATTACKS, Attack, EnforcedBy, Format, Outcome, Timing, Verdict, base64_len};
+
+pub const HOPS: [usize; 4] = [1, 3, 5, 8];
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FormatResult {
+    pub name: String,
+    pub version: String,
+    pub notes: String,
+    pub outcomes: Vec<(Attack, Outcome)>,
+    pub timings: Vec<Timing>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Environment {
+    pub date: String,
+    pub machine: String,
+    pub os: String,
+    pub rustc: String,
+    pub runs_per_case: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Results {
+    pub environment: Environment,
+    pub formats: Vec<FormatResult>,
+}
+
+pub fn run_format(format: &dyn Format, runs: usize) -> FormatResult {
+    FormatResult {
+        name: format.name().to_owned(),
+        version: format.version().to_owned(),
+        notes: format.notes().to_owned(),
+        outcomes: ATTACKS
+            .iter()
+            .map(|attack| (*attack, format.run(*attack)))
+            .collect(),
+        timings: HOPS
+            .iter()
+            .map(|hops| format.measure(*hops, runs))
+            .collect(),
+    }
+}
+
+fn cell(outcome: &Outcome) -> &'static str {
+    match (outcome.verdict, outcome.enforced_by) {
+        (Verdict::Allowed, _) => "Allowed",
+        (Verdict::Blocked, EnforcedBy::YourCode) => "Blocked, with your code",
+        (Verdict::Blocked, _) => "Blocked",
+        (Verdict::NotApplicable, _) => "n/a",
+    }
+}
+
+fn escape(text: &str) -> String {
+    text.replace('|', "\\|").replace('\n', " ")
+}
+
+pub fn to_markdown(results: &Results) -> String {
+    let mut out = String::from("# Results\n\n");
+    let env = &results.environment;
+    out.push_str(&format!(
+        "Run on {} on {}, {}, with {}. These are not scores: read [METHOD.md](METHOD.md) first.\n\n",
+        env.date, env.machine, env.os, env.rustc
+    ));
+
+    out.push_str("## Attacks\n\n| Attack |");
+    for format in &results.formats {
+        out.push_str(&format!(" {} |", format.name));
+    }
+    out.push_str("\n|---|");
+    out.push_str(&"---|".repeat(results.formats.len()));
+    out.push('\n');
+    for (row, attack) in ATTACKS.iter().enumerate() {
+        out.push_str(&format!("| {} |", attack.title()));
+        for format in &results.formats {
+            out.push_str(&format!(" {} |", cell(&format.outcomes[row].1)));
+        }
+        out.push('\n');
+    }
+
+    out.push_str(&format!(
+        "\n## Size and check time\n\nThe same one-tool scenario in each format, with minimal limits. Times cover decoding, every signature and the policy check, over {} runs, and exclude the network. Size is everything the verifier needs, as base64.\n\n",
+        env.runs_per_case
+    ));
+    out.push_str(
+        "| Format | Hops | Size | Median | 99th percentile |\n|---|---:|---:|---:|---:|\n",
+    );
+    for format in &results.formats {
+        for timing in &format.timings {
+            out.push_str(&format!(
+                "| {} | {} | {} bytes | {:.0} µs | {:.0} µs |\n",
+                format.name,
+                timing.hops,
+                base64_len(timing.bytes),
+                timing.median_us,
+                timing.p99_us
+            ));
+        }
+    }
+
+    out.push_str("\n## Why each result happened\n");
+    for format in &results.formats {
+        out.push_str(&format!(
+            "\n### {} ({})\n\n{}\n\n| Attack | Result | Reason |\n|---|---|---|\n",
+            format.name, format.version, format.notes
+        ));
+        for (attack, outcome) in &format.outcomes {
+            out.push_str(&format!(
+                "| {} | {} | {} |\n",
+                attack.title(),
+                cell(outcome),
+                escape(&outcome.detail)
+            ));
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample() -> Results {
+        Results {
+            environment: Environment {
+                date: "2026-11-04".into(),
+                machine: "test".into(),
+                os: "test".into(),
+                rustc: "test".into(),
+                runs_per_case: 1,
+            },
+            formats: vec![FormatResult {
+                name: "F".into(),
+                version: "1".into(),
+                notes: "note".into(),
+                outcomes: ATTACKS
+                    .iter()
+                    .map(|attack| (*attack, Outcome::blocked("a | b")))
+                    .collect(),
+                timings: vec![Timing {
+                    hops: 3,
+                    bytes: 3,
+                    median_us: 1.0,
+                    p99_us: 2.0,
+                }],
+            }],
+        }
+    }
+
+    #[test]
+    fn the_report_has_every_attack_and_no_ranking() {
+        let text = to_markdown(&sample());
+        for attack in ATTACKS {
+            assert!(text.contains(attack.title()));
+        }
+        assert!(!text.to_lowercase().contains("score:"));
+        assert!(!text.to_lowercase().contains("winner"));
+    }
+
+    #[test]
+    fn table_separators_are_escaped() {
+        assert!(to_markdown(&sample()).contains("a \\| b"));
+    }
+
+    #[test]
+    fn cells_say_who_enforced_it() {
+        assert_eq!(cell(&Outcome::blocked("x")), "Blocked");
+        assert_eq!(
+            cell(&Outcome::blocked_by_your_code("x")),
+            "Blocked, with your code"
+        );
+        assert_eq!(cell(&Outcome::allowed("x")), "Allowed");
+        assert_eq!(cell(&Outcome::not_applicable("x")), "n/a");
+    }
+}
