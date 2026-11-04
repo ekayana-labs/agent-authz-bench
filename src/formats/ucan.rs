@@ -151,10 +151,32 @@ fn removed_link<S: Signer>(generate: fn() -> S) -> Outcome {
     chain.check(&chain.invoke(TOOL, &file_in_scope(HOPS)))
 }
 
+/// The chain names the trusted root as its subject, but its first link is signed by someone else.
 fn unknown_root<S: Signer>(generate: fn() -> S) -> Outcome {
     let trusted = generate().did();
-    let chain = Chain::new(generate, HOPS);
-    let invocation = chain.invoke(TOOL, &file_in_scope(HOPS));
+    let mut chain = Chain::new(generate, HOPS);
+    chain.delegations = (0..HOPS)
+        .map(|hop| {
+            delegation(
+                trusted.clone(),
+                chain.keys[hop + 1].did(),
+                &scope_at(hop + 1),
+                &chain.keys[hop],
+                now().plus_seconds(TTL),
+            )
+        })
+        .collect();
+    let mut rng = pq_ucan::rng::system();
+    let mut builder = Invocation::builder(trusted.clone(), command(TOOL))
+        .arg("path", Ipld::String(file_in_scope(HOPS)));
+    for link in &chain.delegations {
+        builder = builder.proof(*link.cid());
+    }
+    let invocation = builder
+        .nonce(Nonce::random(&mut rng))
+        .expires_at(now().plus_seconds(60))
+        .sign(chain.keys.last().unwrap())
+        .unwrap();
     let store = chain.store();
     Outcome::from_result(
         Validator::new(&store, now())
